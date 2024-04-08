@@ -129,3 +129,37 @@ predictSV --hic-5k $raw_path/5000/matrix.cool \
           --hic-10k $raw_path/10000/matrix.cool \
           --hic-50k $raw_path/50000/matrix.cool \
           -O eaglec_chrnum -g other --balance-type ICE --output-format full
+
+
+############ SV calling based on WGS short reads ############
+###### bwa-mem2 alignment for WGS reads
+bwa-mem2 mem -t $ppn -R '@RG\tID:'${pig}'\tPL:illumina\tSM:'${pig}'' ${ref_path}/bwa-mem2/GCF_000003025.6_Sscrofa11.1_genomic ${pig}_1_adprm.fq.gz ${pig}_2_adprm.fq.gz | samtools view -bS - > ${pig}.bam
+
+###### samtools sort and index mapped files
+samtools view -@ $ppn -q 20 -O bam -o ${pig}_mapq20.bam ${pig}.bam
+samtools sort -@ $ppn -O bam -o ${pig}_mapq20.sorted.bam ${pig}_mapq20.bam
+
+###### mark duplicated reads
+picard MarkDuplicates -I ${pig}_mapq20.sorted.bam -O ${pig}_mapq20.sorted.markdup.bam -M ${pig}_mapq20.markdup_metrics.txt
+samtools index -@ $ppn ${pig}_mapq20.sorted.markdup.bam
+samtools index -@ $ppn ${pig}_mapq20.sorted.bam
+
+###### SV calling respectively by DELLY, LUMPY, Manta, and Wham
+# DELLY
+delly call -g $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna ${pig}_mapq20.sorted.markdup.bam > delly_mapq20_markdup.vcf
+
+# LUMPY
+extractSplitReads_BwaMem_path=.../lumpy-sv-master/scripts
+samtools view -@ $ppn -b -F 1294 ${pig}_mapq20.sorted.markdup.bam | samtools sort -@ $ppn - > ${pig}_mapq20.discordants.sorted.markdup.bam
+samtools view -@ $ppn -h ${pig}_mapq20.sorted.markdup.bam | $extractSplitReads_BwaMem_path/extractSplitReads_BwaMem -i stdin | samtools view -@ $ppn -Sb - | samtools sort -@ $ppn - > ${pig}_mapq20.splitters.sorted.markdup.bam
+lumpyexpress -B ${pig}_mapq20.sorted.markdup.bam -S ${pig}_mapq20.splitters.sorted.markdup.bam -D ${pig}_mapq20.discordants.sorted.markdup.bam -o lumpy_mapq20_markdup.vcf
+
+# Manta
+manta_exe_path=.../manta/bin
+$manta_exe_path/configManta.py --referenceFasta $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna --bam ${pig}_mapq20.sorted.markdup.bam --runDir manta_dir_mapq20_markdup
+./manta_dir_mapq20_markdup/runWorkflow.py -j $ppn
+
+# Wham
+whamg -x $ppn -a $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna -f ${pig}_mapq20.sorted.markdup.bam > wham_mapq20_markdup.vcf  2> wham_mapq20_markdup.err
+
+
