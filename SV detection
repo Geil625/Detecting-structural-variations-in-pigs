@@ -33,8 +33,10 @@ samtools index alignment_${aligner}_${platform}_sorted.bam
 
 ###### SV calling by cuteSV, DeBreak, dysgu, Picky, Sniffles, and SVIM respectively using HiFi and ONT reads
 # cuteSV
-cuteSV alignment_${aligner}_HiFi_sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna cuteSV_${aligner}_HiFi.vcf ./ -s 1 -l 50 --genotype --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5 --threads $ppn
-cuteSV alignment_${aligner}_ONT_sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna cuteSV_${aligner}_ONT.vcf ./ -s 5 -l 50 --genotype --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 --diff_ratio_merging_DEL 0.3 --threads $ppn
+cuteSV alignment_${aligner}_HiFi_sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna cuteSV_${aligner}_HiFi.vcf ./ -s 1 -l 50 --genotype \
+ --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5 --threads $ppn
+cuteSV alignment_${aligner}_ONT_sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna cuteSV_${aligner}_ONT.vcf ./ -s 5 -l 50 --genotype \
+ --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 --diff_ratio_merging_DEL 0.3 --threads $ppn
 
 # debreak
 debreak --bam alignment_${aligner}_HiFi_sorted.bam -o debreak_${aligner}_HiFi/ -t $ppn --min_size 50 --min_quality 20 -m 1 --rescue_large_ins --rescue_dup --poa -r $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
@@ -49,7 +51,13 @@ if [ ! -d "picky_${aligner}_${platform}" ]; then
     mkdir picky_${aligner}_${platform}
 fi
 samtools view -h alignment_${aligner}_${platform}_sorted_byName.bam | picky.pl sam2align | picky.pl callSV --oprefix picky_${aligner}_${platform}
-picky.pl xls2vcf --xls picky_${aligner}_${platform}.profile.DEL.xls --xls picky_${aligner}_${platform}.profile.INS.xls --xls picky_${aligner}_${platform}.profile.INDEL.xls --xls picky_${aligner}_${platform}.profile.INV.xls --xls picky_${aligner}_${platform}.profile.TTLC.xls --xls picky_${aligner}_${platform}.profile.TDSR.xls --xls picky_${aligner}_${platform}.profile.TDC.xls > picky_${aligner}_${platform}.allsv.vcf
+picky.pl xls2vcf --xls picky_${aligner}_${platform}.profile.DEL.xls \
+ --xls picky_${aligner}_${platform}.profile.INS.xls \
+ --xls picky_${aligner}_${platform}.profile.INDEL.xls \
+ --xls picky_${aligner}_${platform}.profile.INV.xls \
+ --xls picky_${aligner}_${platform}.profile.TTLC.xls \
+ --xls picky_${aligner}_${platform}.profile.TDSR.xls \
+ --xls picky_${aligner}_${platform}.profile.TDC.xls > picky_${aligner}_${platform}.allsv.vcf
 mv picky_${aligner}_${platform}*.xls picky_${aligner}_${platform}*.vcf picky_${aligner}_${platform}/
 
 # sniffles
@@ -106,7 +114,7 @@ sed -i 's/BIN_SIZE = 20000 40000 150000 500000 1000000/BIN_SIZE = 5000 10000 500
 
 $sft_path/bin/HiC-Pro -i rawdata -o output -c config-hicpro.txt
 
-### convert matrix format to cool format
+###### convert matrix format to cool format
 raw_path=.../$pig/HiC/HiC-Pro_work_dir/output/hic_results/matrix/${pig}/raw
 for reso in 5000 10000 50000;
 do
@@ -115,3 +123,9 @@ do
 	 --inputFormat hicpro --outputFormat cool -o $raw_path/$reso/matrix.cool
 	cooler balance -p $ppn $raw_path/$reso/matrix.cool
 done
+
+###### SV calling by EagleC
+predictSV --hic-5k $raw_path/5000/matrix.cool \
+          --hic-10k $raw_path/10000/matrix.cool \
+          --hic-50k $raw_path/50000/matrix.cool \
+          -O eaglec_chrnum -g other --balance-type ICE --output-format full
