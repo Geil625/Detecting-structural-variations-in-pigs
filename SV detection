@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ref_path=...  # reference genome path
 ppn=... # the number of threads
 aligner=... # the aligner under consideration
@@ -161,5 +163,3 @@ $manta_exe_path/configManta.py --referenceFasta $ref_path/GCF_000003025.6_Sscrof
 
 # Wham
 whamg -x $ppn -a $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna -f ${pig}_mapq20.sorted.markdup.bam > wham_mapq20_markdup.vcf  2> wham_mapq20_markdup.err
-
-
