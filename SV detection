@@ -59,3 +59,59 @@ sniffles --minsvlen 50 --mapq 20 --minsupport 5 --input alignment_${aligner}_ONT
 # svim
 svim alignment --min_mapq 20 --min_sv_size 50 --minimum_depth 1 svim_${aligner}_HiFi alignment_${aligner}_HiFi_sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
 svim alignment --min_mapq 20 --min_sv_size 50 --minimum_depth 5 svim_${aligner}_ONT alignment_${aligner}_ONT_sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
+
+###### SVIM-asm using assembled pig genome based on total HiFi data
+minimap2 -a -x asm5 --cs -r2k -t $ppn $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna assembled_genome.fa | samtools view -bS - > assembly_alignment_minimap2.bam
+samtools sort -@ $ppn -o assembly_alignment_minimap2.sorted.bam assembly_alignment_minimap2.bam
+samtools index assembly_alignment_minimap2.sorted.bam
+svim-asm haploid svim-asm assembly_alignment_minimap2.sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
+
+###### MUM&Co using assembled pig genome based on total HiFi data
+bash mumandco_v3.8.sh -r $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna -q assembled_genome.fa -g 2501912388 -t $ppn -o MUMandCo
+
+
+############ SV calling based on Hi-C short reads ############
+
+###### HiC-Pro processes Hi-C data and produces contact matrices
+pig_path=... # pig raw Hi-C data path
+idx_path=... # bowtie2 index path
+sft_path=... # HiC-Pro software path
+pig=... # the pig individual under consideration
+if [ -d 'HiC-Pro_work_dir' ]; then rm -rf HiC-Pro_work_dir; fi
+mkdir HiC-Pro_work_dir
+cd HiC-Pro_work_dir
+mkdir rawdata
+mkdir rawdata/${pig}
+
+cp ${pig_path}/${pig}_1_adprm.fq.gz rawdata/${pig}/${pig}_R1.fastq.gz # using reads with adapter sequences removed
+cp ${pig_path}/${pig}_2_adprm.fq.gz rawdata/${pig}/${pig}_R2.fastq.gz # using reads with adapter sequences removed
+
+cp $sft_path/config-hicpro.txt ./
+
+sed -i '/^N_CPU/s#[0-9]\+$#'${ppn}'#' config-hicpro.txt
+sed -i '/^MIN_MAPQ/s/[0-9]\+$/20/' config-hicpro.txt
+sed -i 's/JOB_NAME =/JOB_NAME = '${pig}'_HiC-Pro/g' config-hicpro.txt
+sed -i 's/JOB_MEM =/JOB_MEM = 30gb/g' config-hicpro.txt
+sed -i 's/JOB_WALLTIME =/JOB_WALLTIME = 800:00:00/g' config-hicpro.txt
+sed -i 's#BOWTIE2_IDX_PATH =#BOWTIE2_IDX_PATH = '${idx_path}'#g' config-hicpro.txt
+sed -i 's/REFERENCE_GENOME = hg19/REFERENCE_GENOME = GCF_000003025.6_Sscrofa11.1_genomic/g' config-hicpro.txt
+sed -i 's#GENOME_SIZE = chrom_hg19.sizes#GENOME_SIZE = '${ref_path}'/autosomes_X.txt#g' config-hicpro.txt
+sed -i 's#GENOME_FRAGMENT = HindIII_resfrag_hg19.bed#GENOME_FRAGMENT = '${idx_path}'/GCF_000003025.6_Sscrofa11.1_genomic.bed#g' config-hicpro.txt
+sed -i 's/LIGATION_SITE = AAGCTAGCTT/LIGATION_SITE = GATCGATC/g' config-hicpro.txt
+sed -i 's/MIN_FRAG_SIZE =/MIN_FRAG_SIZE = 100/g' config-hicpro.txt
+sed -i 's/MAX_FRAG_SIZE =/MAX_FRAG_SIZE = 100000/g' config-hicpro.txt
+sed -i 's/MIN_INSERT_SIZE =/MIN_INSERT_SIZE = 100/g' config-hicpro.txt
+sed -i 's/MAX_INSERT_SIZE =/MAX_INSERT_SIZE = 1000/g' config-hicpro.txt
+sed -i 's/BIN_SIZE = 20000 40000 150000 500000 1000000/BIN_SIZE = 5000 10000 50000 100000 500000 1000000/g' config-hicpro.txt
+
+$sft_path/bin/HiC-Pro -i rawdata -o output -c config-hicpro.txt
+
+### convert matrix format to cool format
+raw_path=.../$pig/HiC/HiC-Pro_work_dir/output/hic_results/matrix/${pig}/raw
+for reso in 5000 10000 50000;
+do
+	hicConvertFormat -m $raw_path/$reso/${pig}_${reso}.matrix \
+	 --bedFileHicpro $raw_path/$reso/${pig}_${reso}_abs.bed \
+	 --inputFormat hicpro --outputFormat cool -o $raw_path/$reso/matrix.cool
+	cooler balance -p $ppn $raw_path/$reso/matrix.cool
+done
