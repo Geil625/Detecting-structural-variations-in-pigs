@@ -135,6 +135,10 @@ predictSV --hic-5k $raw_path/5000/matrix.cool \
 
 
 ############ SV calling based on WGS short reads ############
+
+###### index reference genome for bwa-mem2
+bwa-mem2 index -p ${ref_path}/GCF_000003025.6_Sscrofa11.1_genomic ${ref_path}/GCF_000003025.6_Sscrofa11.1_genomic.fna
+
 ###### bwa-mem2 alignment for WGS reads
 bwa-mem2 mem -t $ppn -R '@RG\tID:'${pig}'\tPL:illumina\tSM:'${pig}'' ${ref_path}/bwa-mem2/GCF_000003025.6_Sscrofa11.1_genomic ${pig}_1_adprm.fq.gz ${pig}_2_adprm.fq.gz | samtools view -bS - > ${pig}.bam
 
