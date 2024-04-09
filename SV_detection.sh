@@ -29,30 +29,30 @@ zcat integrated.fastq.gz | lra align -CCS $ref_path/GCF_000003025.6_Sscrofa11.1_
 zcat combined.fastq.gz | lra align -ONT $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna /dev/stdin -t $ppn -p s | samtools view -bS - > alignment_lra_ONT.bam
 
 ###### samtools sort and index reads mapped files
-samtools sort -o alignment_${aligner}_${platform}_sorted.bam -@ $ppn alignment_${aligner}_${platform}.bam
-samtools sort -n -o alignment_${aligner}_${platform}_sorted_byName.bam -@ $ppn alignment_${aligner}_${platform}.bam
-samtools index alignment_${aligner}_${platform}_sorted.bam
+samtools sort -o alignment_${aligner}_${platform}.sorted.bam -@ $ppn alignment_${aligner}_${platform}.bam
+samtools sort -n -o alignment_${aligner}_${platform}.sorted_byName.bam -@ $ppn alignment_${aligner}_${platform}.bam
+samtools index alignment_${aligner}_${platform}.sorted.bam
 
 ###### SV calling by cuteSV, DeBreak, dysgu, Picky, Sniffles, and SVIM respectively using HiFi and ONT reads
 # cuteSV
-cuteSV alignment_${aligner}_HiFi_sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna cuteSV_${aligner}_HiFi.vcf ./ -s 1 -l 50 --genotype \
+cuteSV alignment_${aligner}_HiFi.sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna cuteSV_${aligner}_HiFi.vcf ./ -s 1 -l 50 --genotype \
  --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5 --threads $ppn
-cuteSV alignment_${aligner}_ONT_sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna cuteSV_${aligner}_ONT.vcf ./ -s 5 -l 50 --genotype \
+cuteSV alignment_${aligner}_ONT.sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna cuteSV_${aligner}_ONT.vcf ./ -s 5 -l 50 --genotype \
  --max_cluster_bias_INS 100 --diff_ratio_merging_INS 0.3 --max_cluster_bias_DEL 100 --diff_ratio_merging_DEL 0.3 --threads $ppn
 
 # debreak
-debreak --bam alignment_${aligner}_HiFi_sorted.bam -o debreak_${aligner}_HiFi/ -t $ppn --min_size 50 --min_quality 20 -m 1 --rescue_large_ins --rescue_dup --poa -r $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
-debreak --bam alignment_${aligner}_ONT_sorted.bam -o debreak_${aligner}_ONT/ -t $ppn --min_size 50 --min_quality 20 -m 5 --rescue_large_ins --rescue_dup --poa -r $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
+debreak --bam alignment_${aligner}_HiFi.sorted.bam -o debreak_${aligner}_HiFi/ -t $ppn --min_size 50 --min_quality 20 -m 1 --rescue_large_ins --rescue_dup --poa -r $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
+debreak --bam alignment_${aligner}_ONT.sorted.bam -o debreak_${aligner}_ONT/ -t $ppn --min_size 50 --min_quality 20 -m 5 --rescue_large_ins --rescue_dup --poa -r $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
 
 # dysgu
-dysgu call -p $ppn --mode pacbio --min-support 1 --min-size 50 --mq 20 --overwrite --clean $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna ${aligner}_HiFi_temp_dir alignment_${aligner}_HiFi_sorted.bam > dysgu_${aligner}_HiFi.vcf
-dysgu call -p $ppn --mode nanopore --min-support 5 --min-size 50 --mq 20 --overwrite --clean $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna ${aligner}_ONT_temp_dir alignment_${aligner}_ONT_sorted.bam > dysgu_${aligner}_ONT.vcf
+dysgu call -p $ppn --mode pacbio --min-support 1 --min-size 50 --mq 20 --overwrite --clean $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna ${aligner}_HiFi_temp_dir alignment_${aligner}_HiFi.sorted.bam > dysgu_${aligner}_HiFi.vcf
+dysgu call -p $ppn --mode nanopore --min-support 5 --min-size 50 --mq 20 --overwrite --clean $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna ${aligner}_ONT_temp_dir alignment_${aligner}_ONT.sorted.bam > dysgu_${aligner}_ONT.vcf
 
 # Picky
 if [ ! -d "picky_${aligner}_${platform}" ]; then
     mkdir picky_${aligner}_${platform}
 fi
-samtools view -h alignment_${aligner}_${platform}_sorted_byName.bam | picky.pl sam2align | picky.pl callSV --oprefix picky_${aligner}_${platform}
+samtools view -h alignment_${aligner}_${platform}.sorted_byName.bam | picky.pl sam2align | picky.pl callSV --oprefix picky_${aligner}_${platform}
 picky.pl xls2vcf --xls picky_${aligner}_${platform}.profile.DEL.xls \
  --xls picky_${aligner}_${platform}.profile.INS.xls \
  --xls picky_${aligner}_${platform}.profile.INDEL.xls \
@@ -63,12 +63,12 @@ picky.pl xls2vcf --xls picky_${aligner}_${platform}.profile.DEL.xls \
 mv picky_${aligner}_${platform}*.xls picky_${aligner}_${platform}*.vcf picky_${aligner}_${platform}/
 
 # sniffles
-sniffles --minsvlen 50 --mapq 20 --minsupport 1 --input alignment_${aligner}_HiFi_sorted.bam --vcf sniffles_${aligner}_HiFi.vcf --non-germline --threads $ppn
-sniffles --minsvlen 50 --mapq 20 --minsupport 5 --input alignment_${aligner}_ONT_sorted.bam --vcf sniffles_${aligner}_ONT.vcf --non-germline --threads $ppn
+sniffles --minsvlen 50 --mapq 20 --minsupport 1 --input alignment_${aligner}_HiFi.sorted.bam --vcf sniffles_${aligner}_HiFi.vcf --non-germline --threads $ppn
+sniffles --minsvlen 50 --mapq 20 --minsupport 5 --input alignment_${aligner}_ONT.sorted.bam --vcf sniffles_${aligner}_ONT.vcf --non-germline --threads $ppn
 
 # svim
-svim alignment --min_mapq 20 --min_sv_size 50 --minimum_depth 1 svim_${aligner}_HiFi alignment_${aligner}_HiFi_sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
-svim alignment --min_mapq 20 --min_sv_size 50 --minimum_depth 5 svim_${aligner}_ONT alignment_${aligner}_ONT_sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
+svim alignment --min_mapq 20 --min_sv_size 50 --minimum_depth 1 svim_${aligner}_HiFi alignment_${aligner}_HiFi.sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
+svim alignment --min_mapq 20 --min_sv_size 50 --minimum_depth 5 svim_${aligner}_ONT alignment_${aligner}_ONT.sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
 
 ###### SVIM-asm using assembled pig genome based on total HiFi data
 minimap2 -a -x asm5 --cs -r2k -t $ppn $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna assembled_genome.fa | samtools view -bS - > assembly_alignment_minimap2.bam
