@@ -10,4 +10,4 @@ plink --bfile $SNPdata \
  --blocks-max-kb 1000 \
  --blocks-strong-lowci 0.5001 \
  --blocks-strong-highci 1 \
- --out LD_block
+ --out LD
