@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ref_path=... # reference genome path
-pigs=(AW BKS BMA LW PTR) # pig individuals
+pigs=(AW BKS BMA LW PTR) # pig individuals (breeds)
 platforms=(HiFi ONT) # long-read sequencing platforms
 callers=(DeBreak Sniffles SVIM cuteSV dysgu Picky) # callers
 aligners=(minimap2 NGMLR lra) # aligners
