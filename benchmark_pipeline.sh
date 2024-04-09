@@ -11,9 +11,9 @@ for pig in ${pigs[*]};
 do
 	for platform in ${platforms[*]};
 	do
-    cd .../$pig/$platform
-    # merge alignment-based callsets
-		vcfs=$(ls | grep callsets.vcf.gz') 
+		cd .../$pig/$platform
+		# merge alignment-based callsets
+		vcfs=$(ls | grep vcf.gz) # all alignment-based callsets
 		:> all_callsets.txt
 		for vcf in ${vcfs[*]};
 		do
@@ -31,7 +31,7 @@ do
 	done
 
 	# merge assembly-based callsets
-  cd .../$pig/HiFi
+	cd .../$pig/HiFi
 	:> all_callsets.txt
 	cp MUMandCo.vcf.gz temp.vcf.gz
 	bgzip -d temp.vcf.gz
@@ -46,9 +46,9 @@ do
 	rm SURVIVOR_merged_assembly_callset.vcf
 	ls | grep vcf | grep -v gz | grep -v SURVIVOR | xargs rm
 	rm all_callsets.txt
-	
+
 	# merge HiFi and ONT alignment-based sets
-  cd .../$pig
+	cd .../$pig
 	:> all_callsets.txt
 	for platform in ${platforms[*]};
 	do
@@ -56,7 +56,7 @@ do
 	done
 	SURVIVOR merge all_callsets.txt 1000 1 1 1 0 50 SURVIVOR_merged_across_platforms_alignment_set.vcf
 	rm all_callsets.txt
-	
+
 	# merge assembly-based and alignment-based sets
 	:> all_callsets.txt
 	echo `pwd`/HiFi/SURVIVOR_merged_assembly_callset_uniqID.vcf >> all_callsets.txt
