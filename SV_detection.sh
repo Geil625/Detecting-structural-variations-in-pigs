@@ -13,8 +13,9 @@ bam2fastq -o integrated hifi_reads1.bam ... hifi_readsN.bam
 ###### integrate ONT fastq.gz data
 cat fastq_pass/* > fastq_pass/combined.fastq.gz # only use reads with quality > 7
 
-###### index reference genome for minimap2
+###### index reference genome for minimap2 and lra
 minimap2 -d ${ref_path}/GCF_000003025.6_Sscrofa11.1_genomic.mmi ${ref_path}/minimap2/GCF_000003025.6_Sscrofa11.1_genomic.fna
+lra index -ONT GCF_000003025.6_Sscrofa11.1_genomic.fna # [-CCS] output is identical
 
 ###### minimap2 alignment respectively for HiFi and ONT reads
 minimap2 -t $ppn -ax map-hifi $ref_path/minimap2/GCF_000003025.6_Sscrofa11.1_genomic.mmi integrated.fastq.gz | samtools view -bS - > alignment_minimap2_HiFi.bam
