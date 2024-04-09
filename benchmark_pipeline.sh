@@ -13,7 +13,7 @@ do
 	do
 		cd .../$pig/$platform
 		# merge alignment-based callsets
-		vcfs=$(ls | grep vcf.gz) # all alignment-based callsets
+		vcfs=(`ls | grep vcf.gz`) # all alignment-based callsets
 		:> all_callsets.txt
 		for vcf in ${vcfs[*]};
 		do
