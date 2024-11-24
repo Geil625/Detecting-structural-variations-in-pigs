@@ -13,9 +13,3 @@ awk '{if ($2 > 0 || $1 ~ /#/) print $0}' .../picky_sv.allsv.vcf | \
  awk '{if ($7 == "PASS" || $1 ~ /#/)  print $0}' | \
  egrep $autosomes_X | \
  egrep -v 'RE=1;|RE=2;|RE=3;|RE=4;' > .../Picky_filtered.vcf
-
-### SVIM with ONT data downsampling to 1x, 5x, 10x, and 20x
-awk '{if ($2 > 0 || $1 ~ /#/) print $0}' .../variants.vcf | \
- awk '{if ($7 == "PASS" || $1 ~ /#/)  print $0}' | \
- egrep $autosomes_X | grep -v 'SUPPORT=1;' \
- > .../svim_filtered.vcf
