@@ -1,6 +1,5 @@
 #!/bin/bash
 
-ref_path=... # reference genome path
 autosomes_X=... # there are two columns in autosomes_X.txt, 1st column being chromosomes, 2nd column being lengths
 
 ### SVIM with full ONT data
