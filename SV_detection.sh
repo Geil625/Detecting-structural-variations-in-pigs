@@ -64,12 +64,12 @@ picky.pl xls2vcf --xls picky_${aligner}_${platform}.profile.DEL.xls \
 mv picky_${aligner}_${platform}*.xls picky_${aligner}_${platform}*.vcf picky_${aligner}_${platform}/
 
 # sniffles
-sniffles --minsvlen 50 --mapq 20 --minsupport 1 --input alignment_${aligner}_HiFi.sorted.bam --vcf sniffles_${aligner}_HiFi.vcf --non-germline --threads $ppn
-sniffles --minsvlen 50 --mapq 20 --minsupport 5 --input alignment_${aligner}_ONT.sorted.bam --vcf sniffles_${aligner}_ONT.vcf --non-germline --threads $ppn
+sniffles --minsvlen 50 --mapq 20 --minsupport 1 --input alignment_${aligner}_HiFi.sorted.bam --vcf sniffles_${aligner}_HiFi.vcf --threads $ppn --reference $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
+sniffles --minsvlen 50 --mapq 20 --minsupport 5 --input alignment_${aligner}_ONT.sorted.bam --vcf sniffles_${aligner}_ONT.vcf --threads $ppn --reference $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
 
 # svim
-svim alignment --min_mapq 20 --min_sv_size 50 --minimum_depth 1 svim_${aligner}_HiFi alignment_${aligner}_HiFi.sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
-svim alignment --min_mapq 20 --min_sv_size 50 --minimum_depth 5 svim_${aligner}_ONT alignment_${aligner}_ONT.sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
+svim alignment --min_mapq 20 --min_sv_size 50 svim_${aligner}_HiFi alignment_${aligner}_HiFi.sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
+svim alignment --min_mapq 20 --min_sv_size 50 svim_${aligner}_ONT alignment_${aligner}_ONT.sorted.bam $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna
 
 ###### SVIM-asm using assembled pig genome based on total HiFi data
 minimap2 -a -x asm5 --cs -r2k -t $ppn $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna assembled_genome.fa | samtools view -bS - > assembly_alignment_minimap2.bam
