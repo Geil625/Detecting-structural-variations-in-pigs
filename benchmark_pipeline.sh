@@ -81,3 +81,11 @@ do
 	tabix -p vcf benchmark_set.vcf.gz
 done
 
+# make bedpe files
+for pig in ${pigs[*]};
+do
+	cd .../$pig
+	SURVIVOR vcftobed benchmark_set_adjusted.vcf -1 -1 benchmark_set_rearranged.bedpe # the benchmark set has been adjuted by adjust_SURVIVOR_merge_output.r script
+done
+
+
