@@ -81,21 +81,3 @@ do
 	tabix -p vcf benchmark_set.vcf.gz
 done
 
-###### make hotspot and abundant sets ######
-cd ...
-:> all_callsets.txt
-for pig in ${pigs[*]};
-do
-	echo `pwd`/$pig/svanalyzer_filtered_set.clustered.vcf >> all_callsets.txt
-done
-SURVIVOR merge all_callsets.txt 1000 1 1 1 0 50 SURVIVOR_union_acrossPigs.vcf
-SURVIVOR merge all_callsets.txt 1000 5 1 1 0 50 SURVIVOR_overlap_acrossPigs.vcf
-svanalyzer merge --ref $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna --variants SURVIVOR_union_acrossPigs.vcf --prefix SURVIVOR_union_acrossPigs
-svanalyzer merge --ref $ref_path/GCF_000003025.6_Sscrofa11.1_genomic.fna --variants SURVIVOR_overlap_acrossPigs.vcf --prefix SURVIVOR_overlap_acrossPigs
-rm all_callsets.txt
-
-# sort and index
-bcftools sort SURVIVOR_union_acrossPigs.clustered.vcf -o hotspot.vcf.gz -O z
-bcftools sort SURVIVOR_overlap_acrossPigs.clustered.vcf -o abundant.vcf.gz -O z
-tabix -p vcf hotspot.vcf.gz
-tabix -p vcf abundant.vcf.gz
