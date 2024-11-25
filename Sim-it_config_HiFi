@@ -1,0 +1,42 @@
+Project:
+-----------------------------
+Project name             = hifi
+Reference sequence       = .../GCF_000003025.6_Sscrofa11.1_genomic_autosomesX.fna
+Replace ambiguous nts(N) = 
+Max threads              = 16
+
+
+Structural variation:
+-----------------------------
+VCF input                = 
+Foreign sequences        =
+
+Deletions                = 20000
+Length (bp)              = 50-150000
+
+Insertions               = 20000
+Length (bp)              = 50-100000
+
+Tandem duplications      = 500
+Length (bp)              = 50-10000
+Copies                   = 1-20
+
+Inversions               = 150
+Length (bp)              = 50-1300000
+
+Complex substitutions    = 0
+Length (bp)              = 50-100000
+
+Inverted duplications    = 0
+Length (bp)              = 50-350000
+
+Heterozygosity           = 30%
+
+
+Long Read simulation:
+-----------------------------
+Sequencing depth         = 50
+Median length            = 15000
+Length range             = 500-70000
+Accuracy                 = 95%
+Error profile            = .../Sim-it-master/error_profile_PB_Sequel_CCS_hifi.txt
