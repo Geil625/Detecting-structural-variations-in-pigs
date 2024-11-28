@@ -1,0 +1,1 @@
+The key scripts relevant to structural variation (SV) detection in pigs are provided. The SV benchmark sets of five pig breeds compiled based on long reads from 3rd-generation sequencing platforms, i.e., HiFi and ONT 
